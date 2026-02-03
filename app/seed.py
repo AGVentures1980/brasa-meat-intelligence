@@ -1,4 +1,3 @@
-import os
 from sqlalchemy.orm import Session
 from app.database import SessionLocal, init_db
 from app.models import Store
@@ -8,13 +7,16 @@ def run():
     init_db()
     db: Session = SessionLocal()
 
-    # EXEMPLO: troque para sua loja piloto
-    store_id = 903  # exemplo
+    # LOJA PILOTO — TEXAS DE BRAZIL
+    store_id = 903
     name = "Texas de Brazil - Tampa (Pilot)"
-    email = "tampa@texasdebrazil.com"  # troque para o email real que você vai usar
-    pin_plain = f"TDB{store_id}"
+    email = "tampa@texasdebrazil.com"
+
+    # PIN FINAL — TEM QUE SER IGUAL AO STRICT_STORE_PIN DO RENDER
+    pin_plain = "TDB903"
 
     exists = db.query(Store).filter(Store.store_id == store_id).first()
+
     if not exists:
         s = Store(
             store_id=store_id,
@@ -25,9 +27,11 @@ def run():
         )
         db.add(s)
         db.commit()
+        print("Seed criado com sucesso")
+    else:
+        print("Seed já existe — nada foi alterado")
 
     db.close()
-    print("Seed OK")
 
 if __name__ == "__main__":
     run()
