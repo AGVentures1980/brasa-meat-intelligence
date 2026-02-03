@@ -1,138 +1,58 @@
-from fastapi import APIRouter, Request, Form, Depends, UploadFile, File
+from fastapi import APIRouter, Request, Form
 from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from datetime import datetime
-import pandas as pd
 
 from app.database import SessionLocal
-from app.models import Store, UploadBatch, OrderLine, ItemMap
-from app.security import verify_pin, create_token, decode_token
+from app.models import Store
+from app.security import verify_pin, create_token
 
 router = APIRouter()
+templates = Jinja2Templates(directory="templates")
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-def get_current_store(request: Request, db: Session) -> Store | None:
-    token = request.cookies.get("brasa_token")
-    if not token:
-        return None
-    data = decode_token(token)
-    store_id = data.get("store_db_id")
-    if not store_id:
-        return None
-    return db.query(Store).filter(Store.id == store_id, Store.active == True).first()
-
-@router.get("/health")
-def health():
-    return {"system": "BRASA Meat Intelligence™", "status": "ONLINE"}
-
+# =========================
+# LOGIN
+# =========================
 @router.post("/login")
 def login(
     request: Request,
-    email: str = Form(...),
-    pin: str = Form(...),
-    db: Session = Depends(get_db),
+    store_id: int = Form(...),
+    pin: str = Form(...)
 ):
-    store = db.query(Store).filter(Store.email == email, Store.active == True).first()
-    if not store or not verify_pin(pin, store.pin_hash):
-        # volta para login com erro
-        url = "/?error=Credenciais inválidas"
-        return RedirectResponse(url, status_code=302)
+    db: Session = SessionLocal()
 
-    token = create_token({"store_db_id": store.id, "store_id": store.store_id})
-    resp = RedirectResponse("/app", status_code=302)
-    resp.set_cookie("brasa_token", token, httponly=True, samesite="lax")
-    return resp
+    store = db.query(Store).filter(Store.store_id == store_id, Store.active == True).first()
+    db.close()
 
-@router.get("/logout")
-def logout():
-    resp = RedirectResponse("/", status_code=302)
-    resp.delete_cookie("brasa_token")
-    return resp
-
-@router.get("/app", response_class=HTMLResponse)
-def app_page(request: Request, db: Session = Depends(get_db)):
-    store = get_current_store(request, db)
     if not store:
-        return RedirectResponse("/", status_code=302)
-    # app.html pode ser seu painel premium
-    from fastapi.templating import Jinja2Templates
-    templates = Jinja2Templates(directory="templates")
-    return templates.TemplateResponse("app.html", {"request": request, "store": store})
+        return RedirectResponse(url="/?error=store_not_found", status_code=302)
 
-def normalize_item(db: Session, raw_item: str):
-    """
-    Busca mapeamento do item. Se não existir, cria como "needs_review".
-    """
-    m = db.query(ItemMap).filter(ItemMap.raw_item == raw_item, ItemMap.active == True).first()
-    if not m:
-        m = ItemMap(raw_item=raw_item, protein=None, weight_lb=None, combo_proteins=None)
-        db.add(m)
-        db.commit()
-        db.refresh(m)
-    return m
+    if not verify_pin(pin, store.pin_hash):
+        return RedirectResponse(url="/?error=invalid_pin", status_code=302)
 
-@router.post("/api/upload/olo")
-def upload_olo_csv(
-    request: Request,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db)
-):
-    store = get_current_store(request, db)
-    if not store:
-        return {"ok": False, "error": "unauthorized"}
+    token = create_token(store.store_id, store.name)
 
-    content = file.file.read()
-    df = pd.read_csv(pd.io.common.BytesIO(content))
+    response = RedirectResponse(url="/dashboard", status_code=302)
+    response.set_cookie(
+        key="brasa_token",
+        value=token,
+        httponly=True,
+        samesite="lax"
+    )
 
-    # Ajuste esses nomes quando você mandar o print do CSV real:
-    # esperados: item_name, quantity, order_id, order_dt
-    # se vier diferente, a gente adapta aqui.
-    required_cols = ["item_name", "quantity"]
-    for c in required_cols:
-        if c not in df.columns:
-            return {"ok": False, "error": f"CSV sem coluna obrigatória: {c}", "columns": list(df.columns)}
+    return response
 
-    batch = UploadBatch(store_id=store.id, original_filename=file.filename, status="processed")
-    db.add(batch)
-    db.commit()
-    db.refresh(batch)
+# =========================
+# DASHBOARD (PROTEGIDO)
+# =========================
+@router.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request):
+    token = request.cookies.get("brasa_token")
 
-    created = 0
-    needs_review = 0
+    if not token:
+        return RedirectResponse(url="/?error=unauthorized", status_code=302)
 
-    for _, row in df.iterrows():
-        raw_item = str(row["item_name"]).strip()
-        qty = int(row["quantity"]) if str(row["quantity"]).strip() else 1
-
-        m = normalize_item(db, raw_item)
-
-        protein = m.protein
-        weight_lb = m.weight_lb
-
-        if protein is None or weight_lb is None:
-            needs_review += 1
-            batch.status = "needs_review"
-
-        ol = OrderLine(
-            store_id=store.id,
-            upload_batch_id=batch.id,
-            order_id=str(row["order_id"]) if "order_id" in df.columns else None,
-            raw_item=raw_item,
-            quantity=qty,
-            protein=protein,
-            weight_lb=weight_lb,
-            notes=None
-        )
-        db.add(ol)
-        created += 1
-
-    db.commit()
-    db.refresh(batch)
-
-    return {"ok": True, "batch_id": batch.id, "lines_created": created, "needs_review": needs_review, "batch_status": batch.status}
+    return templates.TemplateResponse(
+        "dashboard.html",
+        {"request": request}
+    )
