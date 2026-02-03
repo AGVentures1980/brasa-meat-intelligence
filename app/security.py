@@ -1,7 +1,9 @@
-import os
 from passlib.context import CryptContext
 
-# Força backend bcrypt puro (evita bug de __about__ no Render)
+# ======================================
+# PIN SECURITY — BCRYPT SAFE MODE
+# ======================================
+
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto",
