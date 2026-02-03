@@ -15,6 +15,10 @@ def run():
     # PIN FINAL — TEM QUE SER IGUAL AO STRICT_STORE_PIN DO RENDER
     pin_plain = "TDB903"
 
+    # SEGURANÇA: bcrypt não aceita mais que 72 bytes
+    if len(pin_plain.encode("utf-8")) > 72:
+        raise ValueError("PIN maior que 72 bytes — reduza o tamanho do PIN")
+
     exists = db.query(Store).filter(Store.store_id == store_id).first()
 
     if not exists:
