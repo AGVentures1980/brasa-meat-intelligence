@@ -8,3 +8,4 @@ passlib[bcrypt]==1.7.4
 python-dotenv==1.0.1
 pandas==2.2.2
 python-jose==3.3.0
+PyJWT==2.8.0
