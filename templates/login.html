@@ -1,105 +1,23 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>BRASA Meat Intelligence™</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: "Georgia", "Times New Roman", serif;
-      background: 
-        linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)),
-        url("https://images.unsplash.com/1604908177522-93797d1b9c87?auto=format&fit=crop&w=1600&q=80");
-      background-size: cover;
-      background-position: center;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: #f5f0e6;
-    }
-
-    .card {
-      background: rgba(15, 15, 15, 0.85);
-      padding: 50px;
-      border-radius: 18px;
-      width: 380px;
-      box-shadow: 0 30px 60px rgba(0,0,0,0.7);
-      text-align: center;
-      border: 1px solid rgba(212,175,55,0.4);
-    }
-
-    h1 {
-      font-size: 26px;
-      margin-bottom: 10px;
-      color: #d4af37;
-      letter-spacing: 1px;
-    }
-
-    .subtitle {
-      font-family: Arial, sans-serif;
-      font-size: 13px;
-      color: #ddd;
-      margin-bottom: 35px;
-      letter-spacing: 0.5px;
-    }
-
-    input {
-      width: 100%;
-      padding: 14px;
-      margin: 12px 0;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.2);
-      background: #111;
-      color: #f5f0e6;
-      font-size: 14px;
-    }
-
-    input::placeholder {
-      color: #aaa;
-    }
-
-    button {
-      width: 100%;
-      padding: 16px;
-      margin-top: 20px;
-      border-radius: 12px;
-      border: none;
-      background: linear-gradient(135deg, #d4af37, #b8962e);
-      color: #111;
-      font-size: 15px;
-      letter-spacing: 1px;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(212,175,55,0.5);
-    }
-
-    .footer {
-      margin-top: 25px;
-      font-size: 11px;
-      color: #aaa;
-      letter-spacing: 0.5px;
-    }
-  </style>
+  <meta charset="utf-8" />
+  <title>BRASA Meat Intelligence™ - Login</title>
 </head>
 <body>
-  <div class="card">
-    <h1>BRASA Meat Intelligence™</h1>
-    <div class="subtitle">Strategy • Protein Control • Forecast Platform</div>
+  <h2>BRASA Meat Intelligence™</h2>
+  <form method="POST" action="/login">
+    <label>Email da loja</label><br/>
+    <input name="email" type="email" required /><br/><br/>
 
-    <form action="/login" method="post">
-      <input name="store_id" placeholder="Store ID (ex: 390)" required />
-      <input name="pin" type="password" placeholder="PIN (ex: TDB390)" required />
-      <button type="submit">ACESSAR PLATAFORMA</button>
-    </form>
+    <label>PIN (ex: TDB901)</label><br/>
+    <input name="pin" type="password" required /><br/><br/>
 
-    <div class="footer">
-      Corporate Access • BRASA Systems
-    </div>
-  </div>
+    <button type="submit">Entrar</button>
+  </form>
+
+  {% if error %}
+    <p style="color:red">{{ error }}</p>
+  {% endif %}
 </body>
 </html>
