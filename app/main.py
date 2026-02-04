@@ -9,6 +9,7 @@ from app.seed import run as seed_store
 app = FastAPI(title="BRASA Meat Intelligence™", version="1.0.0")
 
 templates = Jinja2Templates(directory="templates")
+app.state.templates = templates  # 👈 LINHA QUE FALTAVA
 
 @app.on_event("startup")
 def startup():
