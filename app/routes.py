@@ -1,3 +1,4 @@
+raise Exception("ROUTES.PY CARREGADO")
 from fastapi import APIRouter, Depends, Request, UploadFile, File
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
