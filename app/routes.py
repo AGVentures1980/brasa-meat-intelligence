@@ -1,10 +1,21 @@
 from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+
 from app.database import SessionLocal
 from app.models import MeatUsage
 
+# Router principal
 router = APIRouter()
 
+# Templates
+templates = Jinja2Templates(directory="templates")
+
+
+# ---------------------------
+# DB Dependency
+# ---------------------------
 def get_db():
     db = SessionLocal()
     try:
@@ -12,8 +23,24 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/meat-usage")
+
+# ---------------------------
+# PAGE — Formulário
+# ---------------------------
+@router.get("/meat-usage", response_class=HTMLResponse)
+def meat_usage_page(request: Request):
+    return templates.TemplateResponse(
+        "meat_usage.html",
+        {"request": request}
+    )
+
+
+# ---------------------------
+# CREATE — Registro diário
+# ---------------------------
+@router.post("/meat-usage", response_class=HTMLResponse)
 def create_meat_usage(
+    request: Request,
     store_id: int = Form(...),
     cut: str = Form(...),
     received_qty: float = Form(...),
@@ -28,6 +55,14 @@ def create_meat_usage(
         used_qty=used_qty,
         waste_qty=waste_qty
     )
+
     db.add(record)
     db.commit()
-    return {"status": "ok"}
+
+    return templates.TemplateResponse(
+        "meat_usage.html",
+        {
+            "request": request,
+            "success": True
+        }
+    )
