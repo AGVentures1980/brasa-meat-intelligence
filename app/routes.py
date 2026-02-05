@@ -1,3 +1,49 @@
+from fastapi import APIRouter, Depends, Request, UploadFile, File
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+import csv
+import io
+
+from app.database import SessionLocal
+from app.models import Order
+
+router = APIRouter()
+templates = Jinja2Templates(directory="templates")
+
+# ==========================
+# DB SESSION
+# ==========================
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# ==========================
+# DASHBOARD
+# ==========================
+@router.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request):
+    return templates.TemplateResponse(
+        "dashboard.html",
+        {"request": request}
+    )
+
+# ==========================
+# UPLOAD PAGE
+# ==========================
+@router.get("/upload", response_class=HTMLResponse)
+def upload_page(request: Request):
+    return templates.TemplateResponse(
+        "upload.html",
+        {"request": request}
+    )
+
+# ==========================
+# PROCESS CSV UPLOAD
+# ==========================
 @router.post("/upload-orders")
 async def upload_orders(
     file: UploadFile = File(...),
@@ -9,16 +55,14 @@ async def upload_orders(
     inserted = 0
 
     for row in reader:
-
-        record = Order(
-            store_id=int(row.get("store_id") or row.get("Store ID")),
-            order_id=row.get("order_id") or row.get("Order ID"),
-            item=row.get("item") or row.get("Menu Item"),
-            qty=float(row.get("qty") or row.get("Quantity")),
-            order_date=row.get("order_date") or row.get("Date")
+        order = Order(
+            store_id=int(row["store_id"]),
+            order_id=row["order_id"],
+            item=row["item"],
+            qty=float(row["qty"]),
+            order_date=row["order_date"]
         )
-
-        db.add(record)
+        db.add(order)
         inserted += 1
 
     db.commit()
@@ -27,3 +71,25 @@ async def upload_orders(
         "status": "ok",
         "rows_inserted": inserted
     }
+
+# ==========================
+# CONSUMPTION VIEW
+# ==========================
+@router.get("/consumption/{store_id}", response_class=HTMLResponse)
+def consumption(
+    request: Request,
+    store_id: int,
+    db: Session = Depends(get_db)
+):
+    orders = db.query(Order).filter(
+        Order.store_id == store_id
+    ).all()
+
+    return templates.TemplateResponse(
+        "consumption.html",
+        {
+            "request": request,
+            "orders": orders,
+            "store_id": store_id
+        }
+    )
