@@ -5,7 +5,7 @@ import csv
 import io
 
 from app.database import SessionLocal
-from app.models import MeatUsage, Order
+from app.models import Order
 from fastapi.templating import Jinja2Templates
 
 router = APIRouter()
@@ -32,7 +32,7 @@ def dashboard(request: Request):
     )
 
 # ==========================
-# UPLOAD CSV PAGE
+# UPLOAD PAGE
 # ==========================
 @router.get("/upload", response_class=HTMLResponse)
 def upload_page(request: Request):
@@ -45,25 +45,25 @@ def upload_page(request: Request):
 # PROCESS CSV
 # ==========================
 @router.post("/upload-orders")
-def upload_orders(
+async def upload_orders(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
 
-    content = file.file.read().decode("utf-8")
-    csv_reader = csv.DictReader(io.StringIO(content))
+    content = await file.read()
+    decoded = content.decode("utf-8")
+    reader = csv.DictReader(io.StringIO(decoded))
 
     inserted = 0
 
-    for row in csv_reader:
-        record = Order(
+    for row in reader:
+        order = Order(
             store_id=int(row["store_id"]),
-            order_id=row["order_id"],
             item=row["item"],
             qty=float(row["qty"]),
             order_date=row["order_date"]
         )
-        db.add(record)
+        db.add(order)
         inserted += 1
 
     db.commit()
@@ -77,26 +77,21 @@ def upload_orders(
 # CONSUMPTION VIEW
 # ==========================
 @router.get("/consumption/{store_id}", response_class=HTMLResponse)
-def consumption_view(
-    store_id: int,
+def consumption(
     request: Request,
+    store_id: int,
     db: Session = Depends(get_db)
 ):
 
-    records = db.query(Order).filter(
+    orders = db.query(Order).filter(
         Order.store_id == store_id
     ).all()
-
-    total_orders = len(records)
-
-    total_qty = sum(r.qty for r in records)
 
     return templates.TemplateResponse(
         "consumption.html",
         {
             "request": request,
-            "store_id": store_id,
-            "total_orders": total_orders,
-            "total_qty": total_qty
+            "orders": orders,
+            "store_id": store_id
         }
     )
