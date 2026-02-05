@@ -1,52 +1,33 @@
-from fastapi import APIRouter, Request, Form
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, Form, Request
 from sqlalchemy.orm import Session
-
 from app.database import SessionLocal
-from app.models import Store
-from app.security import verify_pin
+from app.models import MeatUsage
 
 router = APIRouter()
 
-
-@router.get("/login", response_class=HTMLResponse)
-def login_page(request: Request):
-    return request.app.state.templates.TemplateResponse(
-        "login.html",
-        {"request": request}
-    )
-
-
-@router.post("/login", response_class=HTMLResponse)
-def login(
-    request: Request,
-    store_id: int = Form(...),
-    pin: str = Form(...)
-):
-    db: Session = SessionLocal()
-
+def get_db():
+    db = SessionLocal()
     try:
-        store = db.query(Store).filter(Store.store_id == store_id).first()
-
-        if not store:
-            return request.app.state.templates.TemplateResponse(
-                "login.html",
-                {"request": request, "error": "Loja não encontrada"}
-            )
-
-        if not verify_pin(pin, store.pin_hash):
-            return request.app.state.templates.TemplateResponse(
-                "login.html",
-                {"request": request, "error": "PIN inválido"}
-            )
-
-        return HTMLResponse(
-            f"""
-            <h2>Login OK</h2>
-            <p>Loja: {store.name}</p>
-            <p>ID: {store.store_id}</p>
-            """
-        )
-
+        yield db
     finally:
         db.close()
+
+@router.post("/meat-usage")
+def create_meat_usage(
+    store_id: int = Form(...),
+    cut: str = Form(...),
+    received_qty: float = Form(...),
+    used_qty: float = Form(...),
+    waste_qty: float = Form(...),
+    db: Session = Depends(get_db)
+):
+    record = MeatUsage(
+        store_id=store_id,
+        cut=cut,
+        received_qty=received_qty,
+        used_qty=used_qty,
+        waste_qty=waste_qty
+    )
+    db.add(record)
+    db.commit()
+    return {"status": "ok"}
