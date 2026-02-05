@@ -1,24 +1,27 @@
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
-from app.models import Store, Recipe
+from app.models import Store, ItemMap
 
 
-# ==============================
-# SEED STORE — TEXAS PILOT
-# ==============================
+# =========================================
+# SEED LOJA PILOTO — TEXAS DE BRAZIL
+# =========================================
 def seed_store():
 
     db: Session = SessionLocal()
 
-    store_exists = db.query(Store).filter(Store.id == 903).first()
+    exists = db.query(Store).filter(Store.id == 903).first()
 
-    if store_exists:
-        print("Seed já existe — nada foi alterado")
+    if exists:
+        print("Seed loja já existe — nada foi alterado")
         return
 
     store = Store(
         id=903,
-        name="Texas de Brazil - Tampa (Pilot)"
+        store_id=903,
+        name="Texas de Brazil - Tampa (Pilot)",
+        email="pilot@texasdebrazil.com",
+        pin_hash="demo_pin_hash"
     )
 
     db.add(store)
@@ -27,35 +30,44 @@ def seed_store():
     print("Seed loja piloto criada com sucesso")
 
 
-# ==============================
-# SEED RECIPES — PADRÃO
-# ==============================
-def seed_recipes():
+# =========================================
+# SEED ITEM MAP — CONVERSÃO OLO → PROTEÍNA
+# =========================================
+def seed_item_map():
 
     db: Session = SessionLocal()
 
-    recipes = [
-        {"item": "Picanha", "cut": "Picanha", "yield_pct": 0.85},
-        {"item": "Filet Mignon", "cut": "Filet", "yield_pct": 0.90},
-        {"item": "Fraldinha", "cut": "Fraldinha", "yield_pct": 0.80},
-        {"item": "Alcatra", "cut": "Alcatra", "yield_pct": 0.82},
+    items = [
+
+        # TEXAS — PRINCIPAIS
+        {"raw_item": "Picanha 1 LB", "protein": "picanha", "weight_lb": 1.0},
+        {"raw_item": "Filet Mignon 1 LB", "protein": "filet", "weight_lb": 1.0},
+        {"raw_item": "Fraldinha 1 LB", "protein": "fraldinha", "weight_lb": 1.0},
+        {"raw_item": "Alcatra 1 LB", "protein": "alcatra", "weight_lb": 1.0},
+
+        # COMBOS
+        {"raw_item": "Combo 2 Proteins", "protein": "combo_2", "combo_proteins": 2},
+
     ]
 
-    for r in recipes:
+    for i in items:
 
-        exists = db.query(Recipe).filter(Recipe.item == r["item"]).first()
+        exists = db.query(ItemMap).filter(
+            ItemMap.raw_item == i["raw_item"]
+        ).first()
 
         if exists:
             continue
 
-        recipe = Recipe(
-            item=r["item"],
-            cut=r["cut"],
-            yield_pct=r["yield_pct"]
+        record = ItemMap(
+            raw_item=i["raw_item"],
+            protein=i.get("protein"),
+            weight_lb=i.get("weight_lb"),
+            combo_proteins=i.get("combo_proteins")
         )
 
-        db.add(recipe)
+        db.add(record)
 
     db.commit()
 
-    print("Seed receitas criado")
+    print("Seed item_map criado com sucesso")
