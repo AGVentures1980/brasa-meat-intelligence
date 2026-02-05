@@ -1,21 +1,14 @@
-from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, Depends, Form, Request, UploadFile, File
 from sqlalchemy.orm import Session
-
 from app.database import SessionLocal
-from app.models import MeatUsage
+from app.models import MeatUsage, Order
+import csv
+import io
+from datetime import datetime
 
-# Router principal
 router = APIRouter()
 
-# Templates
-templates = Jinja2Templates(directory="templates")
-
-
-# ---------------------------
-# DB Dependency
-# ---------------------------
+# DB SESSION
 def get_db():
     db = SessionLocal()
     try:
@@ -23,24 +16,11 @@ def get_db():
     finally:
         db.close()
 
-
-# ---------------------------
-# PAGE — Formulário
-# ---------------------------
-@router.get("/meat-usage", response_class=HTMLResponse)
-def meat_usage_page(request: Request):
-    return templates.TemplateResponse(
-        "meat_usage.html",
-        {"request": request}
-    )
-
-
-# ---------------------------
-# CREATE — Registro diário
-# ---------------------------
-@router.post("/meat-usage", response_class=HTMLResponse)
+# ===============================
+# MEAT USAGE
+# ===============================
+@router.post("/meat-usage")
 def create_meat_usage(
-    request: Request,
     store_id: int = Form(...),
     cut: str = Form(...),
     received_qty: float = Form(...),
@@ -55,14 +35,37 @@ def create_meat_usage(
         used_qty=used_qty,
         waste_qty=waste_qty
     )
-
     db.add(record)
     db.commit()
+    return {"status": "ok"}
 
-    return templates.TemplateResponse(
-        "meat_usage.html",
-        {
-            "request": request,
-            "success": True
-        }
-    )
+# ===============================
+# CSV UPLOAD — ORDERS
+# ===============================
+@router.post("/upload-orders")
+def upload_orders(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    content = file.file.read().decode("utf-8")
+    csv_reader = csv.DictReader(io.StringIO(content))
+
+    inserted = 0
+
+    for row in csv_reader:
+        order = Order(
+            store_id=int(row["store_id"]),
+            order_id=row["order_id"],
+            item_name=row["item_name"],
+            qty=float(row["qty"]),
+            order_date=datetime.fromisoformat(row["order_date"])
+        )
+        db.add(order)
+        inserted += 1
+
+    db.commit()
+
+    return {
+        "status": "uploaded",
+        "rows_inserted": inserted
+    }
