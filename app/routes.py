@@ -1,12 +1,20 @@
-from fastapi import APIRouter, UploadFile, File, Depends
-from sqlalchemy.orm import Session
 import csv
-from datetime import datetime
+from fastapi import APIRouter, Depends, Request, UploadFile, File
+from fastapi.responses import HTMLResponse
+from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.database import SessionLocal
-from app.models import Order, Recipe
+from app.models import OrderItem, Recipe
+from fastapi.templating import Jinja2Templates
 
 router = APIRouter()
+templates = Jinja2Templates(directory="templates")
+
+
+# =========================
+# DB
+# =========================
 
 def get_db():
     db = SessionLocal()
@@ -15,53 +23,76 @@ def get_db():
     finally:
         db.close()
 
+
+# =========================
+# DASHBOARD
+# =========================
+
+@router.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request):
+    return templates.TemplateResponse("dashboard.html", {"request": request})
+
+
+# =========================
+# UPLOAD CSV
+# =========================
+
+@router.get("/upload", response_class=HTMLResponse)
+def upload_page(request: Request):
+    return templates.TemplateResponse("upload.html", {"request": request})
+
+
 @router.post("/upload-orders")
 def upload_orders(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    content = file.file.read().decode("utf-8").splitlines()
-    reader = csv.DictReader(content)
+
+    contents = file.file.read().decode("utf-8").splitlines()
+    reader = csv.DictReader(contents)
 
     inserted = 0
 
     for row in reader:
-        order = Order(
+        record = OrderItem(
             store_id=int(row["store_id"]),
-            order_id=row["order_id"],
             item_name=row["item_name"],
             qty=float(row["qty"]),
-            order_date=datetime.strptime(row["order_date"], "%Y-%m-%d").date()
+            order_date=row["order_date"]
         )
-        db.add(order)
+        db.add(record)
         inserted += 1
 
     db.commit()
 
-    return {
-        "status": "ok",
-        "rows_inserted": inserted
-    }
+    return {"status": "ok", "rows_inserted": inserted}
 
-@router.get("/meat-consumption/{store_id}")
-def meat_consumption(store_id: int, db: Session = Depends(get_db)):
-    results = {}
 
-    orders = db.query(Order).filter_by(store_id=store_id).all()
+# =========================
+# CONSUMO
+# =========================
 
-    for order in orders:
-        recipe = db.query(Recipe).filter_by(item_name=order.item_name).first()
-        if not recipe:
-            continue
+@router.get("/consumption/{store_id}", response_class=HTMLResponse)
+def consumption(store_id: int, request: Request, db: Session = Depends(get_db)):
 
-        consumed = order.qty * recipe.qty_lb
+    results = (
+        db.query(
+            Recipe.cut,
+            func.sum(OrderItem.qty * Recipe.qty_per_unit)
+        )
+        .join(
+            Recipe,
+            (Recipe.item_name == OrderItem.item_name) &
+            (Recipe.store_id == OrderItem.store_id)
+        )
+        .filter(OrderItem.store_id == store_id)
+        .group_by(Recipe.cut)
+        .all()
+    )
 
-        if recipe.cut not in results:
-            results[recipe.cut] = 0
+    data = [{"cut": r[0], "total": float(r[1])} for r in results]
 
-        results[recipe.cut] += consumed
-
-    return {
-        "store_id": store_id,
-        "consumption_lb": results
-    }
+    return templates.TemplateResponse(
+        "consumption.html",
+        {"request": request, "data": data}
+    )
