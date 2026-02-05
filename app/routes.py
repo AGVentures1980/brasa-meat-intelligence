@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 import csv, io
 
 from app.database import SessionLocal
-from app.models import Order
+from app.models import OrderLine
 from fastapi.templating import Jinja2Templates
 
 router = APIRouter()
@@ -54,12 +54,12 @@ async def upload_orders(
     inserted = 0
 
     for row in reader:
-        record = Order(
+        record = OrderLine(
             store_id=int(row["store_id"]),
-            item=row["item"],
-            qty=float(row["qty"]),
-            order_date=row["order_date"]
+            raw_item=row["item"],
+            quantity=int(row["qty"])
         )
+
         db.add(record)
         inserted += 1
 
@@ -79,8 +79,8 @@ def consumption(
     store_id: int,
     db: Session = Depends(get_db)
 ):
-    orders = db.query(Order).filter(
-        Order.store_id == store_id
+    orders = db.query(OrderLine).filter(
+        OrderLine.store_id == store_id
     ).all()
 
     return templates.TemplateResponse(
