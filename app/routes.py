@@ -1,9 +1,7 @@
-raise Exception("ROUTES.PY CARREGADO")
 from fastapi import APIRouter, Depends, Request, UploadFile, File
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
-import csv
-import io
+import csv, io
 
 from app.database import SessionLocal
 from app.models import Order
@@ -50,21 +48,19 @@ async def upload_orders(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-
     content = await file.read()
-    decoded = content.decode("utf-8")
-    reader = csv.DictReader(io.StringIO(decoded))
+    reader = csv.DictReader(io.StringIO(content.decode("utf-8")))
 
     inserted = 0
 
     for row in reader:
-        order = Order(
+        record = Order(
             store_id=int(row["store_id"]),
             item=row["item"],
             qty=float(row["qty"]),
             order_date=row["order_date"]
         )
-        db.add(order)
+        db.add(record)
         inserted += 1
 
     db.commit()
@@ -83,7 +79,6 @@ def consumption(
     store_id: int,
     db: Session = Depends(get_db)
 ):
-
     orders = db.query(Order).filter(
         Order.store_id == store_id
     ).all()
