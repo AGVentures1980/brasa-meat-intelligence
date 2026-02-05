@@ -1,0 +1,15 @@
+<h1>Consumo de Carne</h1>
+
+<table border="1">
+<tr>
+  <th>Corte</th>
+  <th>Total lbs</th>
+</tr>
+
+{% for row in data %}
+<tr>
+  <td>{{ row.cut }}</td>
+  <td>{{ row.total }}</td>
+</tr>
+{% endfor %}
+</table>
