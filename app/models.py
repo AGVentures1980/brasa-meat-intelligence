@@ -1,20 +1,45 @@
 from sqlalchemy import Column, Integer, String, Float, Date
 from app.database import Base
 
-class Order(Base):
-    __tablename__ = "orders"
 
-    id = Column(Integer, primary_key=True, index=True)
-    store_id = Column(Integer, index=True)
-    order_id = Column(String, index=True)
-    item_name = Column(String, index=True)
+# =========================
+# STORES
+# =========================
+
+class Store(Base):
+    __tablename__ = "stores"
+
+    id = Column(Integer, primary_key=True)
+    store_id = Column(Integer)
+    name = Column(String)
+    email = Column(String)
+    pin_hash = Column(String)
+    active = Column(Integer)
+
+
+# =========================
+# PEDIDOS IMPORTADOS
+# =========================
+
+class OrderItem(Base):
+    __tablename__ = "order_items"
+
+    id = Column(Integer, primary_key=True)
+    store_id = Column(Integer)
+    item_name = Column(String)
     qty = Column(Float)
     order_date = Column(Date)
+
+
+# =========================
+# RECEITA DE CARNE
+# =========================
 
 class Recipe(Base):
     __tablename__ = "recipes"
 
-    id = Column(Integer, primary_key=True, index=True)
-    item_name = Column(String, unique=True, index=True)
+    id = Column(Integer, primary_key=True)
+    store_id = Column(Integer)
+    item_name = Column(String)
     cut = Column(String)
-    qty_lb = Column(Float)  # consumo por unidade
+    qty_per_unit = Column(Float)
