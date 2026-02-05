@@ -1,14 +1,13 @@
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, Depends
 from sqlalchemy.orm import Session
 import csv
-from io import TextIOWrapper
+from datetime import datetime
 
 from app.database import SessionLocal
-from app.models import OrderItem  # ajuste se o nome for outro
+from app.models import Order, Recipe
 
 router = APIRouter()
 
-# Dependency DB
 def get_db():
     db = SessionLocal()
     try:
@@ -17,31 +16,24 @@ def get_db():
         db.close()
 
 @router.post("/upload-orders")
-def upload_orders_csv(
+def upload_orders(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    """
-    Upload de pedidos via CSV
-    Esperado:
-    store_id,order_id,item_name,qty,order_date
-    """
-
-    reader = csv.DictReader(
-        TextIOWrapper(file.file, encoding="utf-8")
-    )
+    content = file.file.read().decode("utf-8").splitlines()
+    reader = csv.DictReader(content)
 
     inserted = 0
 
     for row in reader:
-        record = OrderItem(
+        order = Order(
             store_id=int(row["store_id"]),
             order_id=row["order_id"],
             item_name=row["item_name"],
             qty=float(row["qty"]),
-            order_date=row["order_date"]
+            order_date=datetime.strptime(row["order_date"], "%Y-%m-%d").date()
         )
-        db.add(record)
+        db.add(order)
         inserted += 1
 
     db.commit()
@@ -49,4 +41,27 @@ def upload_orders_csv(
     return {
         "status": "ok",
         "rows_inserted": inserted
+    }
+
+@router.get("/meat-consumption/{store_id}")
+def meat_consumption(store_id: int, db: Session = Depends(get_db)):
+    results = {}
+
+    orders = db.query(Order).filter_by(store_id=store_id).all()
+
+    for order in orders:
+        recipe = db.query(Recipe).filter_by(item_name=order.item_name).first()
+        if not recipe:
+            continue
+
+        consumed = order.qty * recipe.qty_lb
+
+        if recipe.cut not in results:
+            results[recipe.cut] = 0
+
+        results[recipe.cut] += consumed
+
+    return {
+        "store_id": store_id,
+        "consumption_lb": results
     }
