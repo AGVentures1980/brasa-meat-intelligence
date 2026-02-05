@@ -4,28 +4,68 @@ from fastapi.templating import Jinja2Templates
 
 from app.database import init_db
 from app.routes import router
-from app.seed import run as seed_store
+from app.seed import seed_store, seed_recipes
 
-app = FastAPI(title="BRASA Meat Intelligence™", version="1.0.0")
+app = FastAPI(
+    title="BRASA Meat Intelligence™",
+    version="1.0.0"
+)
 
 templates = Jinja2Templates(directory="templates")
-app.state.templates = templates  # 👈 LINHA QUE FALTAVA
+
+
+# ==============================
+# STARTUP BLOCK — COPIA INTEIRO
+# ==============================
 
 @app.on_event("startup")
 def startup():
-    print("BRASA STARTUP: Inicializando banco...")
+
+    print("======================================")
+    print("BRASA STARTUP: Inicializando sistema…")
+    print("======================================")
+
+    # 1️⃣ Criar tabelas
+    print("BRASA STARTUP: Inicializando banco…")
     init_db()
 
-    print("BRASA STARTUP: Seed loja piloto...")
+    # 2️⃣ Seed loja piloto (Texas)
+    print("BRASA STARTUP: Seed loja piloto…")
     try:
         seed_store()
-        print("BRASA STARTUP: Seed OK")
+        print("BRASA STARTUP: Loja piloto OK")
     except Exception as e:
-        print("BRASA STARTUP: Seed SKIPPED:", e)
+        print("BRASA STARTUP: Loja já existe — SKIPPED")
+        print("Detalhe:", e)
 
-@app.get("/", response_class=HTMLResponse)
+    # 3️⃣ Seed receitas padrão
+    print("BRASA STARTUP: Seed receitas…")
+    try:
+        seed_recipes()
+        print("BRASA STARTUP: Receitas OK")
+    except Exception as e:
+        print("BRASA STARTUP: Receitas já existem — SKIPPED")
+        print("Detalhe:", e)
+
+    print("======================================")
+    print("BRASA STARTUP: Sistema pronto 🚀")
+    print("======================================")
+
+
+# ==============================
+# LOGIN PAGE
+# ==============================
+
+@app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
-    error = request.query_params.get("error")
-    return templates.TemplateResponse("login.html", {"request": request, "error": error})
+    return templates.TemplateResponse(
+        "login.html",
+        {"request": request}
+    )
+
+
+# ==============================
+# ROUTES
+# ==============================
 
 app.include_router(router)
