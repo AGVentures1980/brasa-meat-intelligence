@@ -44,4 +44,59 @@ def upload_page(request: Request):
 # ==========================
 # PROCESS CSV
 # ==========================
-@
+@router.post("/upload-orders")
+def upload_orders(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+
+    content = file.file.read().decode("utf-8")
+    csv_reader = csv.DictReader(io.StringIO(content))
+
+    inserted = 0
+
+    for row in csv_reader:
+        record = Order(
+            store_id=int(row["store_id"]),
+            order_id=row["order_id"],
+            item=row["item"],
+            qty=float(row["qty"]),
+            order_date=row["order_date"]
+        )
+        db.add(record)
+        inserted += 1
+
+    db.commit()
+
+    return {
+        "status": "ok",
+        "rows_inserted": inserted
+    }
+
+# ==========================
+# CONSUMPTION VIEW
+# ==========================
+@router.get("/consumption/{store_id}", response_class=HTMLResponse)
+def consumption_view(
+    store_id: int,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+
+    records = db.query(Order).filter(
+        Order.store_id == store_id
+    ).all()
+
+    total_orders = len(records)
+
+    total_qty = sum(r.qty for r in records)
+
+    return templates.TemplateResponse(
+        "consumption.html",
+        {
+            "request": request,
+            "store_id": store_id,
+            "total_orders": total_orders,
+            "total_qty": total_qty
+        }
+    )
