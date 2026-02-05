@@ -13,49 +13,37 @@ app = FastAPI(
 
 templates = Jinja2Templates(directory="templates")
 
-
 # ==============================
-# STARTUP BLOCK — COPIA INTEIRO
+# STARTUP
 # ==============================
-
 @app.on_event("startup")
 def startup():
 
     print("======================================")
-    print("BRASA STARTUP: Inicializando sistema…")
+    print("BRASA STARTUP: Inicializando sistema")
     print("======================================")
 
-    # 1️⃣ Criar tabelas
-    print("BRASA STARTUP: Inicializando banco…")
     init_db()
 
-    # 2️⃣ Seed loja piloto (Texas)
-    print("BRASA STARTUP: Seed loja piloto…")
     try:
         seed_store()
-        print("BRASA STARTUP: Loja piloto OK")
-    except Exception as e:
-        print("BRASA STARTUP: Loja já existe — SKIPPED")
-        print("Detalhe:", e)
+        print("Seed loja OK")
+    except Exception:
+        print("Seed loja SKIPPED")
 
-    # 3️⃣ Seed receitas padrão
-    print("BRASA STARTUP: Seed receitas…")
     try:
         seed_recipes()
-        print("BRASA STARTUP: Receitas OK")
-    except Exception as e:
-        print("BRASA STARTUP: Receitas já existem — SKIPPED")
-        print("Detalhe:", e)
+        print("Seed receitas OK")
+    except Exception:
+        print("Seed receitas SKIPPED")
 
     print("======================================")
     print("BRASA STARTUP: Sistema pronto 🚀")
     print("======================================")
 
-
 # ==============================
-# LOGIN PAGE
+# LOGIN
 # ==============================
-
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
     return templates.TemplateResponse(
@@ -63,9 +51,7 @@ def login_page(request: Request):
         {"request": request}
     )
 
-
 # ==============================
-# ROUTES
+# ROUTES (CRÍTICO)
 # ==============================
-
 app.include_router(router)
