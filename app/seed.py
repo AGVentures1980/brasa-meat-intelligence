@@ -1,41 +1,19 @@
-from sqlalchemy.orm import Session
-from app.database import SessionLocal, init_db
-from app.models import Store
-from app.security import hash_pin
+from app.models import Recipe
+from app.database import SessionLocal
 
-def run():
-    init_db()
-    db: Session = SessionLocal()
+def seed_recipes():
+    db = SessionLocal()
 
-    # LOJA PILOTO — TEXAS DE BRAZIL
-    store_id = 903
-    name = "Texas de Brazil - Tampa (Pilot)"
-    email = "tampa@texasdebrazil.com"
+    recipes = [
+        ("Picanha Sandwich", "Picanha", 0.25),
+        ("Filet Mignon Plate", "Filet", 0.40),
+        ("Ribeye Plate", "Ribeye", 0.50),
+    ]
 
-    # PIN FINAL — TEM QUE SER IGUAL AO STRICT_STORE_PIN DO RENDER
-    pin_plain = "TDB903"
+    for item, cut, qty in recipes:
+        exists = db.query(Recipe).filter_by(item_name=item).first()
+        if not exists:
+            db.add(Recipe(item_name=item, cut=cut, qty_lb=qty))
 
-    # SEGURANÇA: bcrypt não aceita mais que 72 bytes
-    if len(pin_plain.encode("utf-8")) > 72:
-        raise ValueError("PIN maior que 72 bytes — reduza o tamanho do PIN")
-
-    exists = db.query(Store).filter(Store.store_id == store_id).first()
-
-    if not exists:
-        s = Store(
-            store_id=store_id,
-            name=name,
-            email=email,
-            pin_hash=hash_pin(pin_plain),
-            active=True
-        )
-        db.add(s)
-        db.commit()
-        print("Seed criado com sucesso")
-    else:
-        print("Seed já existe — nada foi alterado")
-
+    db.commit()
     db.close()
-
-if __name__ == "__main__":
-    run()
