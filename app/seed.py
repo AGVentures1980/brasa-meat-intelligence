@@ -1,41 +1,27 @@
 from sqlalchemy.orm import Session
-from app.database import SessionLocal, init_db
+from app.database import SessionLocal
 from app.models import Store
-from app.security import hash_pin
 
-def run():
-    init_db()
+
+def seed_store():
     db: Session = SessionLocal()
 
-    # LOJA PILOTO — TEXAS DE BRAZIL
-    store_id = 903
-    name = "Texas de Brazil - Tampa (Pilot)"
-    email = "tampa@texasdebrazil.com"
+    store_exists = db.query(Store).filter(Store.id == 903).first()
+    if store_exists:
+        print("Seed loja SKIPPED — já existe")
+        return
 
-    # PIN FINAL — TEM QUE SER IGUAL AO STRICT_STORE_PIN DO RENDER
-    pin_plain = "TDB903"
+    store = Store(
+        id=903,
+        store_id=903,
+        name="Texas de Brazil - Tampa (Pilot)",
+        email="tampa@texasdebrazil.com",
+        pin_hash="TEMP",
+        active=True
+    )
 
-    # SEGURANÇA: bcrypt não aceita mais que 72 bytes
-    if len(pin_plain.encode("utf-8")) > 72:
-        raise ValueError("PIN maior que 72 bytes — reduza o tamanho do PIN")
+    db.add(store)
+    db.commit()
 
-    exists = db.query(Store).filter(Store.store_id == store_id).first()
+    print("Seed loja piloto criada com sucesso")
 
-    if not exists:
-        s = Store(
-            store_id=store_id,
-            name=name,
-            email=email,
-            pin_hash=hash_pin(pin_plain),
-            active=True
-        )
-        db.add(s)
-        db.commit()
-        print("Seed criado com sucesso")
-    else:
-        print("Seed já existe — nada foi alterado")
-
-    db.close()
-
-if __name__ == "__main__":
-    run()
