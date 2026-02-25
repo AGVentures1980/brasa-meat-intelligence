@@ -1,16 +1,15 @@
 from fastapi import APIRouter, Depends, Request, UploadFile, File
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-import csv, io
+import csv
+import io
 
 from app.database import SessionLocal
 from app.models import Order
-from fastapi.templating import Jinja2Templates
-
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
-
 
 # ==========================
 # DB SESSION
@@ -22,7 +21,6 @@ def get_db():
     finally:
         db.close()
 
-
 # ==========================
 # DASHBOARD
 # ==========================
@@ -33,7 +31,6 @@ def dashboard(request: Request):
         {"request": request}
     )
 
-
 # ==========================
 # UPLOAD PAGE
 # ==========================
@@ -43,7 +40,6 @@ def upload_page(request: Request):
         "upload.html",
         {"request": request}
     )
-
 
 # ==========================
 # PROCESS CSV UPLOAD
@@ -110,7 +106,6 @@ async def upload_orders(
         "rows_inserted": inserted
     }
 
-
 # ==========================
 # CONSUMPTION VIEW
 # ==========================
@@ -132,4 +127,3 @@ def consumption(
             "store_id": store_id
         }
     )
-

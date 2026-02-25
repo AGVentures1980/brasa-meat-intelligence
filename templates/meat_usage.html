@@ -1,0 +1,19 @@
+<h2>Registro Diário de Consumo</h2>
+
+<form method="post" action="/meat-usage">
+  <input type="hidden" name="store_id" value="903">
+
+  <label>Corte</label><br>
+  <input name="cut"><br><br>
+
+  <label>Recebido (lbs)</label><br>
+  <input name="received_qty" type="number" step="0.01"><br><br>
+
+  <label>Usado (lbs)</label><br>
+  <input name="used_qty" type="number" step="0.01"><br><br>
+
+  <label>Desperdício (lbs)</label><br>
+  <input name="waste_qty" type="number" step="0.01"><br><br>
+
+  <button type="submit">Salvar</button>
+</form>

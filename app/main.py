@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.database import init_db
 from app.routes import router
+from app.seed import seed_store, seed_recipes
 
 app = FastAPI(
     title="BRASA Meat Intelligence™",
@@ -11,7 +12,6 @@ app = FastAPI(
 )
 
 templates = Jinja2Templates(directory="templates")
-
 
 # ==============================
 # STARTUP
@@ -25,10 +25,21 @@ def startup():
 
     init_db()
 
+    try:
+        seed_store()
+        print("Seed loja OK")
+    except Exception:
+        print("Seed loja SKIPPED")
+
+    try:
+        seed_recipes()
+        print("Seed receitas OK")
+    except Exception:
+        print("Seed receitas SKIPPED")
+
     print("======================================")
     print("BRASA STARTUP: Sistema pronto 🚀")
     print("======================================")
-
 
 # ==============================
 # LOGIN
@@ -40,9 +51,7 @@ def login_page(request: Request):
         {"request": request}
     )
 
-
 # ==============================
-# ROUTES
+# ROUTES (CRÍTICO)
 # ==============================
 app.include_router(router)
-

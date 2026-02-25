@@ -1,6 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
+
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Pedidos</title>
     <style>
         body {
@@ -10,25 +13,27 @@
             padding: 40px;
         }
 
-        input, button {
+        input,
+        button {
             padding: 10px;
             margin-top: 10px;
         }
     </style>
 </head>
+
 <body>
 
-<h1>Upload CSV — Pedidos OLO</h1>
+    <h1>Upload CSV — Pedidos OLO</h1>
 
-<form action="/upload-orders" method="post" enctype="multipart/form-data">
-    <input type="file" name="file" required>
+    <form action="/upload-orders" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" required>
+        <br>
+        <button type="submit">Enviar CSV</button>
+    </form>
+
     <br>
-    <button type="submit">Enviar CSV</button>
-</form>
-
-<br>
-<a href="/dashboard">← Voltar</a>
+    <a href="/dashboard">← Voltar</a>
 
 </body>
-</html>
 
+</html>

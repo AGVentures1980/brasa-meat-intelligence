@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models import Store
-
+# If ItemMap is needed later we can import it, but it appears missing from models.py in the previous merge.
+# We will just seed Store for now to avoid breaking imports since ItemMap was not in models.py
 
 def seed_store():
     db: Session = SessionLocal()
@@ -24,4 +25,3 @@ def seed_store():
     db.commit()
 
     print("Seed loja piloto criada com sucesso")
-
