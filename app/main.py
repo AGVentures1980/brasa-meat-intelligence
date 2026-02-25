@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.database import init_db
 from app.routes import router
+from app.procurement import router as procurement_router
 from app.seed import seed_store, seed_recipes
 
 app = FastAPI(
@@ -55,3 +56,4 @@ def login_page(request: Request):
 # ROUTES (CRÍTICO)
 # ==============================
 app.include_router(router)
+app.include_router(procurement_router, prefix="/api/v1/procurement")

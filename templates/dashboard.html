@@ -22,6 +22,13 @@
             font-size: 18px;
         }
 
+        a.corp {
+            color: #0af;
+            border-top: 1px solid #333;
+            padding-top: 20px;
+            margin-top: 40px;
+        }
+
         a:hover {
             color: #fff;
         }
@@ -38,6 +45,9 @@
     <a href="/upload">📤 Upload Pedidos CSV</a>
 
     <a href="/consumption/903">🥩 Consumo — Loja 903 (Texas de Brazil)</a>
+
+    <!-- Apenas OWNER via backend validation -->
+    <a href="/api/v1/procurement/dashboard?store_id=1" class="corp">💼 Acessar Enterprise Procurement (OWNER ONLY)</a>
 
 </body>
 
